@@ -1,0 +1,94 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Constantes físicas (Sale 26.253666 porque m es la masa del electrón, m1=m2=m)
+K_FACTOR_1 = 26.253666 # = 2*m1/hbar**2 (eV^-1 nm^-2)
+K_FACTOR_2 = 26.253666 # = 2*m2/hbar**2 (eV^-1 nm^-2)
+
+def calcular_coeficientes(E, V0, a, b):
+    """
+    Calcula los coeficientes de transmisión T y reflexión R
+    """
+    # Parámetros dados
+    gamma = (K_FACTOR_2/K_FACTOR_1)  # Va a depender de como definamos K_FACTOR_1 y K_FACTOR_2. gamma = m2 / m1
+    k = np.sqrt(K_FACTOR_1* E)
+    L = b - a
+    
+    # Definir q según si E < V0 o E > V0
+    if E < V0:
+        q = np.sqrt(K_FACTOR_2*(V0 - E))
+        denominador = 1 + (( (k * gamma)**2 + q**2 )**2 / (4 * k**2 * q**2 * gamma**2)) * np.sinh(q * L)**2
+        T = 1 / denominador
+        R = (((k * gamma)**2 + q**2)**2 / (4 * k**2 * q**2 * gamma**2)) * np.sinh(q * L)**2 / denominador
+    else:  # E > V0
+        q = np.sqrt(K_FACTOR_2*(E - V0))
+        denominador = 1 + (( (k * gamma)**2 - q**2 )**2 / (4 * k**2 * q**2 * gamma**2)) * np.sin(q * L)**2
+        T = 1 / denominador
+        R = (((k * gamma)**2 - q**2)**2 / (4 * k**2 * q**2 * gamma**2)) * np.sin(q * L)**2 / denominador
+    
+    return T, R
+
+# Parámetros del sistema base
+a = 0.0000000000001          # nm
+b = 3         # nm
+L = b - a          # Ancho de la barrera
+Vo = 0.23         # ev
+
+# Rango de energías para evaluar
+E_min = 0.1    # eV (empezamos en 0.1 para evitar división por cero)
+E_max = 0.6    # eV
+num_puntos = 1000
+
+# Crear array de energías
+energias = np.linspace(E_min, E_max, num_puntos)
+
+# Arrays para almacenar resultados
+T_values = np.zeros(num_puntos)
+R_values = np.zeros(num_puntos)
+T_plus_R = np.zeros(num_puntos)
+
+# Calcular coeficientes para cada energía
+for i, E in enumerate(energias):
+    T, R = calcular_coeficientes(E, Vo, a, b)
+    T_values[i] = T
+    R_values[i] = R
+    T_plus_R[i] = T + R
+
+# Crear la gráfica con las tres curvas
+plt.figure(figsize=(10, 6))
+
+# Curva de coeficiente de transmisión (T)
+plt.plot(energias, T_values, 'b-', linewidth=2, label='Coeficiente de Transmisión (T)')
+
+# Curva de coeficiente de reflexión (R)
+plt.plot(energias, R_values, 'r-', linewidth=2, label='Coeficiente de Reflexión (R)')
+
+# Curva de T + R
+plt.plot(energias, T_plus_R, 'g--', linewidth=2, label='T + R')
+
+# Personalizar la gráfica
+plt.xlabel('Energía (eV)', fontsize=12)
+plt.ylabel('Coeficientes', fontsize=12)
+plt.title('Coeficientes de Transmisión y Reflexión vs Energía', fontsize=14)
+plt.grid(True, alpha=0.3)
+plt.legend(fontsize=10)
+plt.ylim(-0.1, 1.5)  # Ajustar límites para mejor visualización
+
+# Línea vertical en V0 para referencia
+plt.axvline(x=Vo, color='k', linestyle=':', alpha=0.7, label=f'V0 = {Vo} eV')
+
+# Línea horizontal en 1.0 para verificar conservación
+plt.axhline(y=1.0, color='gray', linestyle=':', alpha=0.5)
+
+plt.legend(fontsize=10)
+plt.tight_layout()
+plt.show()
+
+# Verificación adicional: imprimir algunos valores
+print(f"Parámetros utilizados:")
+print(f"a = {a} nm, b = {b} nm, L = {L} nm")
+print(f"V0 = {Vo} eV")
+print(f"\nAlgunos valores de ejemplo:")
+print(f"En E = {Vo/2:.2f} eV: T = {calcular_coeficientes(Vo/2, Vo, a, b)[0]:.4f}, R = {calcular_coeficientes(Vo/2, Vo, a, b)[1]:.4f}")
+print(f"En E = {Vo:.2f} eV: T = {calcular_coeficientes(Vo, Vo, a, b)[0]:.4f}, R = {calcular_coeficientes(Vo, Vo, a, b)[1]:.4f}")
+print(f"En E = {Vo*1.5:.2f} eV: T = {calcular_coeficientes(Vo*1.5, Vo, a, b)[0]:.4f}, R = {calcular_coeficientes(Vo*1.5, Vo, a, b)[1]:.4f}")
